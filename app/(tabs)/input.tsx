@@ -1,19 +1,89 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
 import { defaultCategories } from '../../lib/constants/categories';
+import { useAuthStore } from '../../lib/store/authStore';
+import { createTransaction } from '../../features/transactions/services/transactionService';
+import { classifyCategory, saveStoreMapping } from '../../features/transactions/services/categoryClassifier';
 
 export default function InputScreen() {
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [storeName, setStoreName] = useState('');
   const [memo, setMemo] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [rememberStore, setRememberStore] = useState(false);
 
-  const handleRecord = () => {
-    // TODO: 取引を保存
-    console.log('Record:', { amount, selectedCategory, storeName, memo });
+  const userId = useAuthStore((state) => state.user);
+
+  const handleRecord = async () => {
+    if (!userId) {
+      Alert.alert('エラー', 'ログインしてください');
+      return;
+    }
+
+    if (!amount || !selectedCategory) {
+      Alert.alert('エラー', '金額とカテゴリを入力してください');
+      return;
+    }
+
+    const amountValue = parseInt(amount.replace(/,/g, ''), 10);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      Alert.alert('エラー', '金額を正しく入力してください');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // カテゴリを自動分類（店名がある場合）
+      let categoryId = selectedCategory;
+      let categorySource: 'manual' | 'builtin' | 'user_dict' | 'ai' = 'manual';
+      let categoryConfidence = 1.0;
+
+      if (storeName && !selectedCategory) {
+        const classification = await classifyCategory(userId, storeName, amountValue);
+        categoryId = classification.category_id;
+        categorySource = classification.source;
+        categoryConfidence = classification.confidence;
+      }
+
+      // 取引を保存
+      const today = new Date().toISOString().split('T')[0];
+
+      await createTransaction({
+        user_id: userId,
+        date: today,
+        amount: amountValue,
+        type: 'expense',
+        category_id: categoryId,
+        store_name: storeName || null,
+        memo: memo || null,
+        source: 'manual',
+      });
+
+      // 店名を記憶する
+      if (rememberStore && storeName && categoryId) {
+        await saveStoreMapping(userId, storeName, categoryId);
+      }
+
+      // フォームをリセット
+      setAmount('');
+      setSelectedCategory(null);
+      setStoreName('');
+      setMemo('');
+      setRememberStore(false);
+
+      Alert.alert('記録完了', '支出を記録しました');
+    } catch (error) {
+      console.error('Error recording transaction:', error);
+      Alert.alert('エラー', '記録に失敗しました');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,6 +97,7 @@ export default function InputScreen() {
         {['手動入力', 'レシート', 'CSV'].map((mode) => (
           <TouchableOpacity
             key={mode}
+            onPress={() => {}}
             style={{
               flex: 1,
               paddingVertical: 12,
@@ -58,6 +129,7 @@ export default function InputScreen() {
           onChangeText={setAmount}
           placeholder="0"
           keyboardType="numeric"
+          editable={!loading}
           style={{
             fontSize: 48,
             fontWeight: '300',
@@ -81,6 +153,7 @@ export default function InputScreen() {
             <TouchableOpacity
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
+              disabled={loading}
               style={{
                 backgroundColor:
                   selectedCategory === category.id ? colors.accentBg : colors.bgWarm,
@@ -92,6 +165,7 @@ export default function InputScreen() {
                   selectedCategory === category.id ? colors.accentSoft : colors.borderLight,
                 minWidth: 80,
                 alignItems: 'center',
+                opacity: loading ? 0.5 : 1,
               }}
             >
               <Text
@@ -117,6 +191,7 @@ export default function InputScreen() {
           value={storeName}
           onChangeText={setStoreName}
           placeholder="店名"
+          editable={!loading}
           style={{
             fontSize: 16,
             color: colors.ink,
@@ -130,6 +205,7 @@ export default function InputScreen() {
           value={memo}
           onChangeText={setMemo}
           placeholder="メモ"
+          editable={!loading}
           style={{
             fontSize: 16,
             color: colors.ink,
@@ -138,13 +214,44 @@ export default function InputScreen() {
             borderBottomColor: colors.borderLight,
           }}
         />
+
+        {/* 店名を記憶するチェックボックス */}
+        {storeName && (
+          <TouchableOpacity
+            onPress={() => setRememberStore(!rememberStore)}
+            disabled={loading}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: rememberStore ? colors.accent : colors.border,
+                backgroundColor: rememberStore ? colors.accent : 'transparent',
+                marginRight: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {rememberStore && (
+                <Text style={{ color: colors.card, fontSize: 14 }}>✓</Text>
+              )}
+            </View>
+            <Text style={{ fontSize: 13, color: colors.inkSoft }}>
+              この店名を記憶する
+            </Text>
+          </TouchableOpacity>
+        )}
       </Card>
 
       {/* 記録ボタン */}
       <TouchableOpacity
         onPress={handleRecord}
+        disabled={loading}
         style={{
-          backgroundColor: colors.accent,
+          backgroundColor: loading ? colors.inkLight : colors.accent,
           borderRadius: 16,
           paddingVertical: 16,
           alignItems: 'center',
@@ -152,9 +259,13 @@ export default function InputScreen() {
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.card }}>
-          記録する
-        </Text>
+        {loading ? (
+          <ActivityIndicator color={colors.card} />
+        ) : (
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.card }}>
+            記録する
+          </Text>
+        )}
       </TouchableOpacity>
     </Screen>
   );
