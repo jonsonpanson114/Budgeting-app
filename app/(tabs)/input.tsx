@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Platform, Modal, Text, View } from 'react-native';
+import { Alert, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';

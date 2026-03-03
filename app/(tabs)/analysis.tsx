@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
@@ -13,6 +13,14 @@ import {
 } from '../../features/ai/services/aiService';
 import { getMonthlySummary } from '../../features/transactions/services/transactionService';
 import { defaultCategories } from '../../lib/constants/categories';
+import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryArea } from 'victory-native';
+
+const screenWidth = Dimensions.get('window').width;
+
+interface MonthlyTrendData {
+  month: string;
+  amount: number;
+}
 
 export default function AnalysisScreen() {
   const [loading, setLoading] = useState(true);
@@ -21,6 +29,7 @@ export default function AnalysisScreen() {
   const [monthlyExpense, setMonthlyExpense] = useState(0);
   const [prevMonthlyExpense, setPrevMonthlyExpense] = useState(0);
   const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrendData[]>([]);
 
   const userId = useAuthStore((state) => state.user);
   const aiComment = useAIStore((state) => state.currentComment);
@@ -47,6 +56,26 @@ export default function AnalysisScreen() {
       const prevYear = month === 1 ? year - 1 : year;
       const prevSummary = await getMonthlySummary(userId, prevYear, prevMonth);
       setPrevMonthlyExpense(prevSummary.totalExpense);
+
+      // 6ヶ月分の推移データを取得
+      const trendData: MonthlyTrendData[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(year, month - 1 - i, 1);
+        const trendYear = d.getFullYear();
+        const trendMonth = d.getMonth() + 1;
+        const monthLabel = `${trendMonth}月`;
+
+        try {
+          const trendSummary = await getMonthlySummary(userId, trendYear, trendMonth);
+          trendData.push({
+            month: monthLabel,
+            amount: trendSummary.totalExpense,
+          });
+        } catch (error) {
+          trendData.push({ month: monthLabel, amount: 0 });
+        }
+      }
+      setMonthlyTrend(trendData);
 
       // カテゴリ別集計
       const categoryTotals: any[] = [];
@@ -178,6 +207,63 @@ export default function AnalysisScreen() {
                     {expenseChange > 0 ? '+' : ''}{expenseChange.toFixed(1)}%
                   </Text>
                 </View>
+              </View>
+            </Card>
+
+            {/* 支出推移チャート */}
+            <Card style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 16 }}>
+                6ヶ月の支出推移
+              </Text>
+              <View style={{ alignItems: 'center' }}>
+                <VictoryChart
+                  width={screenWidth - 88}
+                  height={200}
+                  theme={VictoryTheme.material}
+                  padding={{ top: 20, bottom: 30, left: 50, right: 20 }}
+                >
+                  {/* 塗りつぶしエリア（0.08透過） */}
+                  <VictoryArea
+                    data={monthlyTrend}
+                    x="month"
+                    y="amount"
+                    style={{
+                      data: { fill: colors.accent, fillOpacity: 0.08 },
+                    }}
+                    interpolation="catmullRom"
+                  />
+                  {/* 折れ線 */}
+                  <VictoryLine
+                    data={monthlyTrend}
+                    x="month"
+                    y="amount"
+                    style={{
+                      data: {
+                        stroke: colors.accent,
+                        strokeWidth: 2,
+                      },
+                    }}
+                    interpolation="catmullRom"
+                  />
+                  {/* Y軸 */}
+                  <VictoryAxis
+                    dependentAxis
+                    style={{
+                      axis: { stroke: colors.borderLight, strokeWidth: 1 },
+                      tickLabels: { fontSize: 10, fill: colors.inkMuted },
+                      grid: { stroke: colors.borderLight, strokeWidth: 1 },
+                    }}
+                    tickFormat={(value) => `¥${(value / 1000).toFixed(0)}k`}
+                  />
+                  {/* X軸 */}
+                  <VictoryAxis
+                    style={{
+                      axis: { stroke: colors.borderLight, strokeWidth: 1 },
+                      tickLabels: { fontSize: 10, fill: colors.inkMuted },
+                      grid: { display: 'none' },
+                    }}
+                  />
+                </VictoryChart>
               </View>
             </Card>
 

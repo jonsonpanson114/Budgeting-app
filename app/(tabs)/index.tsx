@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
@@ -10,7 +10,16 @@ import { getRecentTransactions, getMonthlySummary } from '../../features/transac
 import { getCategoryBudgets, getBudgetProgress, getMonthlyBudget } from '../../features/budget/services/budgetService';
 import { getOrGenerateAIComment, getCurrentMonthPeriod } from '../../features/ai/services/aiService';
 import { router } from 'expo-router';
+import { VictoryPie } from 'victory-native';
 import type { Transaction } from '../../lib/types/common';
+
+const screenWidth = Dimensions.get('window').width;
+
+interface PieChartData {
+  x: string;
+  y: number;
+  fill: string;
+}
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -20,6 +29,7 @@ export default function HomeScreen() {
   const [categoryBudgets, setCategoryBudgets] = useState<any[]>([]);
   const [categorySummary, setCategorySummary] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
 
   const userId = useAuthStore((state) => state.user);
   const monthlyBudget = useBudgetStore((state) => state.monthlyBudget);
@@ -45,6 +55,14 @@ export default function HomeScreen() {
       const { categoryBudgets, categoryProgress } = await getBudgetProgress(userId, year, month);
       setCategoryBudgets(categoryBudgets);
       setCategorySummary(categoryProgress);
+
+      // ドーナツチャート用データを作成
+      const pieData: PieChartData[] = categoryProgress.map(item => ({
+        x: item.category_name,
+        y: item.spent,
+        fill: item.category_color,
+      }));
+      setPieChartData(pieData);
 
       // 直近の取引を取得
       const recent = await getRecentTransactions(userId, 5);
@@ -223,6 +241,28 @@ export default function HomeScreen() {
             </Card>
           )}
         </Card>
+
+        {/* カテゴリ別ドーナツチャート */}
+        {pieChartData.length > 0 && (
+          <Card style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 16 }}>
+              支出の内訳
+            </Text>
+            <View style={{ alignItems: 'center' }}>
+              <VictoryPie
+                data={pieChartData}
+                width={screenWidth - 88}
+                height={screenWidth - 88}
+                innerRadius={screenWidth / 4}
+                colorScale={pieChartData.map(d => d.fill)}
+                style={{
+                  labels: { fontSize: 10, fill: colors.inkMuted },
+                }}
+                labelRadius={({ innerRadius }) => innerRadius + 20}
+              />
+            </View>
+          </Card>
+        )}
 
         {/* 支出内訳（カテゴリ別） */}
         {categorySummary.length > 0 && (
