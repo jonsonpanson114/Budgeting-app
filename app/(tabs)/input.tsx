@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
@@ -10,6 +11,7 @@ import { createTransaction } from '../../features/transactions/services/transact
 import { classifyCategory, saveStoreMapping } from '../../features/transactions/services/categoryClassifier';
 import { getVoiceInputService, resetVoiceInputService, type VoiceInputResult } from '../../features/input/services/voiceInputService';
 import { processVoiceInput, type ParsedInput } from '../../features/input/services/inputParser';
+import { parseReceipt, type ParsedReceipt } from '../../features/receipt/services/receiptParser';
 
 export default function InputScreen() {
   const [inputMode, setInputMode] = useState<'manual' | 'receipt' | 'csv' | 'voice'>('manual');
@@ -24,6 +26,12 @@ export default function InputScreen() {
   const [isListening, setIsListening] = useState(false);
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const [voiceResult, setVoiceResult] = useState<{ text: string; parsed: ParsedInput; confidence: number } | null>(null);
+
+  // レシート撮影の状態
+  const [receiptModalVisible, setReceiptModalVisible] = useState(false);
+  const [receiptResult, setReceiptResult] = useState<ParsedReceipt | null>(null);
+  const [parsingReceipt, setParsingReceipt] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const userId = useAuthStore((state) => state.user);
 
@@ -179,8 +187,66 @@ export default function InputScreen() {
     if (mode === 'csv') {
       router.push('/input/csv-import');
     } else if (mode === 'receipt') {
-      Alert.alert('工事中', 'レシート撮影は工事中です');
+      setReceiptModalVisible(true);
     }
+  };
+
+  // レシート画像を選択
+  const handleSelectImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('エラー', '画像の選択に失敗しました');
+    }
+  };
+
+  // レシート画像を解析
+  const handleParseReceipt = async () => {
+    if (!selectedImage) {
+      Alert.alert('エラー', '画像を選択してください');
+      return;
+    }
+
+    setParsingReceipt(true);
+
+    try {
+      const parsed = await parseReceipt(selectedImage);
+      setReceiptResult(parsed);
+
+      // 解析結果を入力フォームに反映
+      if (parsed.totalAmount && !amount) {
+        setAmount(parsed.totalAmount.toString());
+      }
+      if (parsed.storeName && !storeName) {
+        setStoreName(parsed.storeName);
+      }
+      if (parsed.items && parsed.items.length > 0 && !memo) {
+        setMemo(parsed.items.map(item => item.name).join('・'));
+      }
+
+      setReceiptModalVisible(false);
+      setSelectedImage(null);
+    } catch (error) {
+      console.error('Receipt parsing error:', error);
+      Alert.alert('エラー', 'レシートの解析に失敗しました。別の画像で試してください。');
+    } finally {
+      setParsingReceipt(false);
+    }
+  };
+
+  // レシート結果を確認
+  const handleConfirmReceipt = () => {
+    setReceiptModalVisible(false);
+    // 解析結果は既にフォームに反映済み
   };
 
   return (
@@ -524,6 +590,149 @@ export default function InputScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
                   適用
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </View>
+      </Modal>
+
+      {/* レシート撮影モーダル */}
+      <Modal
+        visible={receiptModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReceiptModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+          <Card style={{ maxWidth: 340 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.ink, marginBottom: 16 }}>
+              レシートを撮影
+            </Text>
+
+            {/* 画像選択エリア */}
+            <TouchableOpacity
+              onPress={handleSelectImage}
+              disabled={parsingReceipt}
+              style={{
+                backgroundColor: colors.bgWarm,
+                borderRadius: 12,
+                padding: 40,
+                alignItems: 'center',
+                marginBottom: 16,
+                borderWidth: 2,
+                borderColor: selectedImage ? colors.accent : colors.borderLight,
+                borderStyle: 'dashed',
+                opacity: parsingReceipt ? 0.5 : 1,
+              }}
+            >
+              {selectedImage ? (
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={{ width: 200, height: 150, borderRadius: 8 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <>
+                  <Text style={{ fontSize: 40, marginBottom: 8 }}>📷</Text>
+                  <Text style={{ fontSize: 14, color: colors.inkSoft }}>
+                    タップして画像を選択
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* 解析結果表示 */}
+            {receiptResult && (
+              <View style={{ backgroundColor: colors.bgWarm, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
+                  解析結果
+                </Text>
+                <View style={{ gap: 12 }}>
+                  {receiptResult.storeName && (
+                    <View>
+                      <Text style={{ fontSize: 12, color: colors.inkMuted }}>店名:</Text>
+                      <Text style={{ fontSize: 15, color: colors.accent }}>
+                        {receiptResult.storeName}
+                      </Text>
+                    </View>
+                  )}
+                  {receiptResult.totalAmount > 0 && (
+                    <View>
+                      <Text style={{ fontSize: 12, color: colors.inkMuted }}>合計:</Text>
+                      <Text style={{ fontSize: 15, color: colors.accent }}>
+                        ¥{receiptResult.totalAmount.toLocaleString()}
+                      </Text>
+                    </View>
+                  )}
+                  {receiptResult.items && receiptResult.items.length > 0 && (
+                    <View>
+                      <Text style={{ fontSize: 12, color: colors.inkMuted }}>商品:</Text>
+                      <View style={{ gap: 4 }}>
+                        {receiptResult.items.slice(0, 3).map((item, index) => (
+                          <Text key={index} style={{ fontSize: 13, color: colors.ink }}>
+                            {item.name} ¥{item.price.toLocaleString()}
+                          </Text>
+                        ))}
+                        {receiptResult.items.length > 3 && (
+                          <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+                            他 {receiptResult.items.length - 3} 件
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* ボタン */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setReceiptModalVisible(false);
+                  setSelectedImage(null);
+                  setReceiptResult(null);
+                }}
+                disabled={parsingReceipt}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.bgWarm,
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  opacity: parsingReceipt ? 0.5 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 14, color: colors.inkSoft }}>
+                  キャンセル
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={receiptResult ? handleConfirmReceipt : handleParseReceipt}
+                disabled={parsingReceipt}
+                style={{
+                  flex: 1,
+                  backgroundColor: parsingReceipt ? colors.inkLight : colors.accent,
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                }}
+              >
+                {parsingReceipt ? (
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
+                    解析中...
+                  </Text>
+                ) : receiptResult ? (
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
+                    適用
+                  </Text>
+                ) : (
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
+                    解析する
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </Card>
