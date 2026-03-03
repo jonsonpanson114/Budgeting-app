@@ -1,9 +1,42 @@
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
 import { colors } from '../../lib/constants/colors';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { signOut } from '../../lib/supabase/auth';
+import { setUser, logout as logoutStore } from '../../lib/store/authStore';
 
 export default function SettingsScreen() {
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'ログアウト',
+      'ログアウトしますか？',
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: 'ログアウト',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              setUser(null);
+              router.replace('/(auth)/login');
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   return (
     <Screen>
       <Text style={{ fontSize: 24, fontWeight: '600', color: colors.ink, marginBottom: 20 }}>
@@ -53,22 +86,62 @@ export default function SettingsScreen() {
 
       {/* その他設定 */}
       <Card>
-        {['通知設定', 'CSV取込元', 'カテゴリ管理', 'データエクスポート'].map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderLight,
-            }}
-          >
-            <Text style={{ fontSize: 15, color: colors.inkSoft }}>{item}</Text>
-            <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          onPress={() => router.push('/input/csv-import')}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+          }}
+        >
+          <Text style={{ fontSize: 15, color: colors.inkSoft }}>CSV取込元</Text>
+          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+          }}
+          onPress={() => {}}
+        >
+          <Text style={{ fontSize: 15, color: colors.inkSoft }}>カテゴリ管理</Text>
+          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+          }}
+          onPress={() => {}}
+        >
+          <Text style={{ fontSize: 15, color: colors.inkSoft }}>データエクスポート</Text>
+          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+        </TouchableOpacity>
+
+        {/* ログアウト */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 12,
+          }}
+        >
+          <Text style={{ fontSize: 15, color: colors.inkSoft }}>ログアウト</Text>
+          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+        </TouchableOpacity>
       </Card>
     </Screen>
   );
