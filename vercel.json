@@ -1,10 +1,12 @@
 {
-  "buildCommand": "expo export",
+  "buildCommand": "npx expo export",
   "outputDirectory": "dist",
   "devCommand": "expo start",
   "installCommand": "npm install",
   "framework": null,
-  "regions": ["hnd1"],
+  "regions": [
+    "hnd1"
+  ],
   "env": {
     "EXPO_PUBLIC_SUPABASE_URL": "@supabase-url",
     "EXPO_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
