@@ -87,7 +87,7 @@ export default function SettingsScreen() {
       {/* その他設定 */}
       <Card>
         <TouchableOpacity
-          onPress={() => router.push('/input/csv-import')}
+          onPress={() => router.push('/settings/budget')}
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -101,6 +101,7 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          onPress={() => router.push('/settings/budget')}
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -109,7 +110,6 @@ export default function SettingsScreen() {
             borderBottomWidth: 1,
             borderBottomColor: colors.borderLight,
           }}
-          onPress={() => {}}
         >
           <Text style={{ fontSize: 15, color: colors.inkSoft }}>カテゴリ管理</Text>
           <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>

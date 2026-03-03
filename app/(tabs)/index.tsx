@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../lib/store/authStore';
+import { useBudgetStore } from '../../lib/store/budgetStore';
 import { getRecentTransactions, getMonthlySummary } from '../../features/transactions/services/transactionService';
+import { getCategoryBudgets, getBudgetProgress, getMonthlyBudget } from '../../features/budget/services/budgetService';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [monthlyExpense, setMonthlyExpense] = useState(0);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [monthlyBudget, setMonthlyBudget] = useState(80000);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [categoryBudgets, setCategoryBudgets] = useState<any[]>([]);
   const [categorySummary, setCategorySummary] = useState<any[]>([]);
 
   const userId = useAuthStore((state) => state.user);
+  const monthlyBudget = useBudgetStore((state) => state.monthlyBudget);
 
   const loadData = async () => {
     if (!userId) return;
@@ -32,29 +35,14 @@ export default function HomeScreen() {
       setMonthlyExpense(summary.totalExpense);
       setMonthlyIncome(summary.totalIncome);
 
+      // カテゴリ別予算・進捗を取得
+      const { categoryBudgets, categoryProgress } = await getBudgetProgress(userId, year, month);
+      setCategoryBudgets(categoryBudgets);
+      setCategorySummary(categoryProgress);
+
       // 直近の取引を取得
       const recent = await getRecentTransactions(userId, 5);
       setTransactions(recent);
-
-      // カテゴリ別集計
-      const categoryMap = new Map();
-      summary.transactions.forEach(t => {
-        if (t.type === 'expense') {
-          const current = categoryMap.get(t.category_name || 'その他') || { amount: 0, color: t.category_color || colors.slate };
-          categoryMap.set(t.category_name || 'その他', {
-            amount: current.amount + t.amount,
-            color: t.category_color || colors.slate,
-          });
-        }
-      });
-
-      const summaryArray = Array.from(categoryMap.entries()).map(([name, data]) => ({
-        name,
-        amount: data.amount,
-        color: data.color,
-      })).sort((a, b) => b.amount - a.amount);
-
-      setCategorySummary(summaryArray);
     } catch (error) {
       console.error('Error loading home data:', error);
     } finally {
@@ -73,7 +61,11 @@ export default function HomeScreen() {
   };
 
   const remainingBudget = monthlyBudget - monthlyExpense;
-  const progressPercent = Math.min((monthlyExpense / monthlyBudget) * 100, 100);
+  const totalProgressPercent = Math.min((monthlyExpense / monthlyBudget) * 100, 100);
+
+  const handleBudgetSettings = () => {
+    router.push('/settings/budget');
+  };
 
   if (loading) {
     return (
@@ -128,37 +120,92 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* プログレスバー */}
-          <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2, marginTop: 16 }}>
-            <View
-              style={{
-                height: '100%',
-                width: `${progressPercent}%`,
-                backgroundColor: progressPercent > 90 ? colors.rose : colors.sage,
-                borderRadius: 2,
-              }}
-            />
-          </View>
-        </Card>
+          {/* プログレスバー（カテゴリ別） */}
+          {categorySummary.length > 0 && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 8 }}>
+                カテゴリ別予算の進捗
+              </Text>
+              {categorySummary.slice(0, 3).map((item, index) => {
+                const progressPercent = Math.min((item.percentage || 0), 100);
+                const isOver = item.isOver || false;
+                return (
+                  <View key={item.name} style={{ marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: item.color,
+                          }}
+                        />
+                        <Text style={{ fontSize: 14, color: colors.inkSoft }}>{item.name}</Text>
+                      </View>
+                      <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+                        {item.spent.toLocaleString()} / {item.budget.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-end', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={handleBudgetSettings}
+                        style={{
+                          backgroundColor: colors.bgWarm,
+                          borderRadius: 6,
+                          paddingHorizontal: 12,
+                          paddingVertical: 4,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, color: colors.accent }}>設定</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  </View>
+                );
+              })}
+              {/* 詳細表示 */}
+              {totalProgressPercent > 0 && (
+                <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2, marginTop: 12 }}>
+                  <View
+                    style={{
+                      height: '100%',
+                      width: `${totalProgressPercent}%`,
+                      backgroundColor: totalProgressPercent > 90 ? colors.rose : colors.sage,
+                      borderRadius: 2,
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          )}
 
-        {/* AIコメントカード（仮） */}
-        <Card variant="alt" style={{ marginBottom: 24 }}>
-          <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
-            AIからのアドバイス
-          </Text>
-          <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}>
-            <Text style={{ fontSize: 16, lineHeight: 24, color: colors.ink }}>
-              先週はコンビニの出費が多かったみたい。外食を控えて、家で作るようにすると今月は予算内で収まりそうやで。
+          {/* AIコメントカード（仮） */}
+          <Card variant="alt" style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
+              AIからのアドバイス
             </Text>
-          </View>
-        </Card>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, color: colors.ink }}>
+                先週はコンビニの出費が多かったみたい。外食を控えて、家で作るようにすると今月は予算内で収まりそうやで。
+              </Text>
+            </View>
+          </Card>
 
-        {/* 支出内訳 */}
+        {/* 支出内訳（カテゴリ別） */}
         {categorySummary.length > 0 && (
           <Card style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink, marginBottom: 16 }}>
-              支出内訳
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink }}>
+                支出内訳（カテゴリ別）
+              </Text>
+              <TouchableOpacity
+                onPress={handleBudgetSettings}
+                style={{ backgroundColor: colors.bgWarm, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
+              >
+                <Text style={{ fontSize: 13, color: colors.accent }}>管理</Text>
+              </TouchableOpacity>
+            </View>
             {categorySummary.map((item) => (
               <View
                 key={item.name}
@@ -183,9 +230,15 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: 15, color: colors.inkSoft }}>{item.name}</Text>
                 </View>
                 <Text style={{ fontSize: 15, color: colors.ink, fontWeight: '300' }}>
-                  ¥{item.amount.toLocaleString()}
+                  ¥{item.spent.toLocaleString()}
                 </Text>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: item.isOver ? colors.rose : (item.spent >= item.budget ? colors.rose : colors.sage) }}>
+                    {item.spent >= item.budget ? '予算オーバー' : `${Math.round((item.spent / item.budget) * 100)}%`}
+                  </Text>
+                </View>
               </View>
+            </View>
             ))}
           </Card>
         )}
@@ -195,12 +248,12 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink, marginBottom: 16 }}>
             直近の取引
           </Text>
-          {transactions.length === 0 ? (
+          {categorySummary.length === 0 ? (
             <Text style={{ fontSize: 14, color: colors.inkMuted, textAlign: 'center', paddingVertical: 20 }}>
               取引はありません
             </Text>
           ) : (
-            transactions.map((t) => (
+            categorySummary.slice(0, 5).map((t) => (
               <View
                 key={t.id}
                 style={{
@@ -224,7 +277,13 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: 16, color: colors.ink, fontWeight: '300' }}>
                     ¥{t.amount.toLocaleString()}
                   </Text>
-                  <Text style={{ fontSize: 12, color: t.category_color || colors.inkLight }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: t.category_color || colors.inkLight,
+                      marginTop: 4,
+                    }}
+                  >
                     {t.category_name || 'その他'}
                   </Text>
                 </View>

@@ -105,7 +105,7 @@ export default function InputScreen() {
 
       {/* モード選択（Segmented Control） */}
       <View style={{ flexDirection: 'row', backgroundColor: colors.bgWarm, borderRadius: 12, padding: 4, marginBottom: 32 }}>
-        {(['手動入力', 'レシート', 'CSV'] as const).map((mode) => (
+        {['手動入力', 'レシート', 'CSV'].map((mode) => (
           <TouchableOpacity
             key={mode}
             onPress={() => switchMode(mode)}
@@ -194,6 +194,27 @@ export default function InputScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* カテゴリが選択されている場合のみ予算設定ボタンを表示 */}
+            {selectedCategory && (
+              <TouchableOpacity
+                onPress={() => router.push('/settings/budget')}
+                style={{
+                  backgroundColor: colors.bgWarm,
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  flex: 1,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 13, color: colors.inkSoft }}>
+                  予算設定
+                </Text>
+              </TouchableOpacity>
+            )}
           </Card>
 
           {/* 店名・メモ */}
