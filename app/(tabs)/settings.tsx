@@ -4,11 +4,14 @@ import { colors } from '../../lib/constants/colors';
 import { Text, View, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signOut } from '../../lib/supabase/auth';
-import { setUser, logout as logoutStore } from '../../lib/store/authStore';
+import { useAuthStore } from '../../lib/store/authStore';
+import { useAIStore } from '../../lib/store/aiStore';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const tone = useAIStore((state) => state.tone);
+  const setTone = useAIStore((state) => state.setTone);
 
   const handleLogout = () => {
     Alert.alert(
@@ -25,7 +28,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await signOut();
-              setUser(null);
+              logout();
               router.replace('/(auth)/login');
             } catch (error) {
               console.error('Logout error:', error);
@@ -43,51 +46,61 @@ export default function SettingsScreen() {
         設定
       </Text>
 
-      {/* 予算設定 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 12 }}>
-          予算
-        </Text>
-        <Text style={{ fontSize: 16, color: colors.ink }}>月次予算: ¥80,000</Text>
-      </Card>
-
       {/* AIトーン設定 */}
       <Card style={{ marginBottom: 16 }}>
         <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 12 }}>
           AIのトーン
         </Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {['やさしめ', 'ふつう', 'きびしめ'].map((tone) => (
+          {[
+            { label: 'やさしめ', value: 'gentle' },
+            { label: 'ふつう', value: 'normal' },
+            { label: 'きびしめ', value: 'strict' },
+          ].map((t) => (
             <TouchableOpacity
-              key={tone}
+              key={t.value}
+              onPress={() => setTone(t.value as any)}
               style={{
                 flex: 1,
                 paddingVertical: 12,
                 alignItems: 'center',
-                backgroundColor: tone === 'ふつう' ? colors.accentBg : colors.bgWarm,
+                backgroundColor: tone === t.value ? colors.accentBg : colors.bgWarm,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: tone === 'ふつう' ? colors.accentSoft : colors.borderLight,
+                borderColor: tone === t.value ? colors.accentSoft : colors.borderLight,
               }}
             >
               <Text
                 style={{
                   fontSize: 14,
-                  color: tone === 'ふつう' ? colors.accent : colors.inkSoft,
-                  fontWeight: tone === 'ふつう' ? '600' : '400',
+                  color: tone === t.value ? colors.accent : colors.inkSoft,
+                  fontWeight: tone === t.value ? '600' : '400',
                 }}
               >
-                {tone}
+                {t.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+        <Text style={{ fontSize: 12, color: colors.inkMuted, marginTop: 12 }}>
+          AIからのアドバイスのトーンを選択できます
+        </Text>
       </Card>
+
+      {/* 予算設定 */}
+      <TouchableOpacity onPress={() => router.push('/settings/budget')}>
+        <Card style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 15, color: colors.inkSoft }}>カテゴリ別予算</Text>
+            <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
 
       {/* その他設定 */}
       <Card>
         <TouchableOpacity
-          onPress={() => router.push('/settings/budget')}
+          onPress={() => {}}
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -101,29 +114,15 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => router.push('/settings/budget')}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.borderLight,
-          }}
-        >
-          <Text style={{ fontSize: 15, color: colors.inkSoft }}>カテゴリ管理</Text>
-          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.borderLight,
-          }}
           onPress={() => {}}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+          }}
         >
           <Text style={{ fontSize: 15, color: colors.inkSoft }}>データエクスポート</Text>
           <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
@@ -139,8 +138,8 @@ export default function SettingsScreen() {
             paddingVertical: 12,
           }}
         >
-          <Text style={{ fontSize: 15, color: colors.inkSoft }}>ログアウト</Text>
-          <Text style={{ fontSize: 16, color: colors.inkLight }}>›</Text>
+          <Text style={{ fontSize: 15, color: colors.rose }}>ログアウト</Text>
+          <Text style={{ fontSize: 16, color: colors.rose }}>›</Text>
         </TouchableOpacity>
       </Card>
     </Screen>

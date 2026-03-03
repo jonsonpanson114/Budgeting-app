@@ -5,9 +5,12 @@ import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../lib/store/authStore';
 import { useBudgetStore } from '../../lib/store/budgetStore';
+import { useAIStore } from '../../lib/store/aiStore';
 import { getRecentTransactions, getMonthlySummary } from '../../features/transactions/services/transactionService';
 import { getCategoryBudgets, getBudgetProgress, getMonthlyBudget } from '../../features/budget/services/budgetService';
+import { getOrGenerateAIComment, getCurrentMonthPeriod } from '../../features/ai/services/aiService';
 import { router } from 'expo-router';
+import type { Transaction } from '../../lib/types/common';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -16,9 +19,12 @@ export default function HomeScreen() {
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [categoryBudgets, setCategoryBudgets] = useState<any[]>([]);
   const [categorySummary, setCategorySummary] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const userId = useAuthStore((state) => state.user);
   const monthlyBudget = useBudgetStore((state) => state.monthlyBudget);
+  const aiComment = useAIStore((state) => state.currentComment);
+  const aiLoading = useAIStore((state) => state.loading);
 
   const loadData = async () => {
     if (!userId) return;
@@ -43,6 +49,15 @@ export default function HomeScreen() {
       // 直近の取引を取得
       const recent = await getRecentTransactions(userId, 5);
       setTransactions(recent);
+
+      // AIコメントを取得
+      const period = getCurrentMonthPeriod();
+      try {
+        const comment = await getOrGenerateAIComment(userId, period, 'normal');
+        useAIStore.getState().setCurrentComment(comment);
+      } catch (error) {
+        console.error('Error loading AI comment:', error);
+      }
     } catch (error) {
       console.error('Error loading home data:', error);
     } finally {
@@ -126,11 +141,11 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 8 }}>
                 カテゴリ別予算の進捗
               </Text>
-              {categorySummary.slice(0, 3).map((item, index) => {
+              {categorySummary.slice(0, 3).map((item) => {
                 const progressPercent = Math.min((item.percentage || 0), 100);
                 const isOver = item.isOver || false;
                 return (
-                  <View key={item.name} style={{ marginBottom: 12 }}>
+                  <View key={item.category_name} style={{ marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <View
@@ -138,35 +153,49 @@ export default function HomeScreen() {
                             width: 8,
                             height: 8,
                             borderRadius: 4,
-                            backgroundColor: item.color,
+                            backgroundColor: item.category_color,
                           }}
                         />
-                        <Text style={{ fontSize: 14, color: colors.inkSoft }}>{item.name}</Text>
+                        <Text style={{ fontSize: 14, color: colors.inkSoft }}>{item.category_name}</Text>
                       </View>
                       <Text style={{ fontSize: 13, color: colors.inkMuted }}>
                         {item.spent.toLocaleString()} / {item.budget.toLocaleString()}
                       </Text>
                     </View>
-                    <View style={{ flex: 1, alignItems: 'flex-end', gap: 8 }}>
-                      <TouchableOpacity
-                        onPress={handleBudgetSettings}
+                    <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2 }}>
+                      <View
                         style={{
-                          backgroundColor: colors.bgWarm,
-                          borderRadius: 6,
-                          paddingHorizontal: 12,
-                          paddingVertical: 4,
+                          height: '100%',
+                          width: `${progressPercent}%`,
+                          backgroundColor: isOver ? colors.rose : colors.sage,
+                          borderRadius: 2,
                         }}
-                      >
-                        <Text style={{ fontSize: 11, color: colors.accent }}>設定</Text>
-                      </TouchableOpacity>
+                      />
                     </View>
-                  </View>
                   </View>
                 );
               })}
               {/* 詳細表示 */}
               {totalProgressPercent > 0 && (
-                <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2, marginTop: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                  <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+                    合計進捗
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleBudgetSettings}
+                    style={{
+                      backgroundColor: colors.bgWarm,
+                      borderRadius: 6,
+                      paddingHorizontal: 12,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, color: colors.accent }}>設定</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {totalProgressPercent > 0 && (
+                <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2, marginTop: 8 }}>
                   <View
                     style={{
                       height: '100%',
@@ -180,17 +209,20 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* AIコメントカード（仮） */}
-          <Card variant="alt" style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
-              AIからのアドバイス
-            </Text>
-            <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}>
-              <Text style={{ fontSize: 16, lineHeight: 24, color: colors.ink }}>
-                先週はコンビニの出費が多かったみたい。外食を控えて、家で作るようにすると今月は予算内で収まりそうやで。
+          {/* AIコメントカード */}
+          {aiComment && (
+            <Card variant="alt" style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
+                AIからのアドバイス
               </Text>
-            </View>
-          </Card>
+              <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, color: colors.ink }}>
+                  {aiComment.summary}
+                </Text>
+              </View>
+            </Card>
+          )}
+        </Card>
 
         {/* 支出内訳（カテゴリ別） */}
         {categorySummary.length > 0 && (
@@ -208,7 +240,7 @@ export default function HomeScreen() {
             </View>
             {categorySummary.map((item) => (
               <View
-                key={item.name}
+                key={item.category_name}
                 style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
@@ -224,10 +256,10 @@ export default function HomeScreen() {
                       width: 8,
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: item.color,
+                      backgroundColor: item.category_color,
                     }}
                   />
-                  <Text style={{ fontSize: 15, color: colors.inkSoft }}>{item.name}</Text>
+                  <Text style={{ fontSize: 15, color: colors.inkSoft }}>{item.category_name}</Text>
                 </View>
                 <Text style={{ fontSize: 15, color: colors.ink, fontWeight: '300' }}>
                   ¥{item.spent.toLocaleString()}
@@ -238,7 +270,6 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
             ))}
           </Card>
         )}
@@ -248,12 +279,12 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink, marginBottom: 16 }}>
             直近の取引
           </Text>
-          {categorySummary.length === 0 ? (
+          {transactions.length === 0 ? (
             <Text style={{ fontSize: 14, color: colors.inkMuted, textAlign: 'center', paddingVertical: 20 }}>
               取引はありません
             </Text>
           ) : (
-            categorySummary.slice(0, 5).map((t) => (
+            transactions.map((t) => (
               <View
                 key={t.id}
                 style={{
