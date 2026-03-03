@@ -27,7 +27,7 @@ export async function parseReceipt(imageUri: string): Promise<ParsedReceipt> {
 
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // 画像をbase64エンコード
     const imageBase64 = await uriToBase64(imageUri);
