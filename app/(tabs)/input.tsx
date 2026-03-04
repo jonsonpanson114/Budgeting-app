@@ -257,26 +257,31 @@ export default function InputScreen() {
 
       {/* モード選択（Segmented Control） */}
       <View style={{ flexDirection: 'row', backgroundColor: colors.bgWarm, borderRadius: 12, padding: 4, marginBottom: 32 }}>
-        {['手動入力', '音声', 'レシート', 'CSV'].map((mode) => (
+        {[
+          { id: 'manual', label: '手動入力' },
+          { id: 'voice', label: '音声' },
+          { id: 'receipt', label: 'レシート' },
+          { id: 'csv', label: 'CSV' },
+        ].map((mode) => (
           <TouchableOpacity
-            key={mode}
-            onPress={() => switchMode(mode)}
+            key={mode.id}
+            onPress={() => switchMode(mode.id as 'manual' | 'receipt' | 'csv' | 'voice')}
             style={{
               flex: 1,
               paddingVertical: 12,
               alignItems: 'center',
               borderRadius: 8,
-              backgroundColor: inputMode === mode ? colors.card : 'transparent',
+              backgroundColor: inputMode === mode.id ? colors.card : 'transparent',
             }}
           >
             <Text
               style={{
                 fontSize: 14,
-                color: inputMode === mode ? colors.ink : colors.inkMuted,
-                fontWeight: inputMode === mode ? '600' : '400',
+                color: inputMode === mode.id ? colors.ink : colors.inkMuted,
+                fontWeight: inputMode === mode.id ? '600' : '400',
               }}
             >
-              {mode}
+              {mode.label}
             </Text>
           </TouchableOpacity>
         ))}
