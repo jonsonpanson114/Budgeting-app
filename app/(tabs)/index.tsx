@@ -385,7 +385,7 @@ export default function HomeScreen() {
                     {formatDate(t.date)}
                   </Text>
                   <Text style={{ fontSize: fontSizes.sm, color: colors.inkSoft }} numberOfLines={1}>
-                    {t.store_name || '不明'}
+                    {t.store_name || t.memo || '不明'}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>

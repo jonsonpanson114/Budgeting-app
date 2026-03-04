@@ -158,7 +158,7 @@ export default function TransactionsScreen() {
                       {formatDate(t.date)}
                     </Text>
                     <Text style={{ fontSize: 15, color: colors.inkSoft }}>
-                      {t.store_name || '不明'}
+                      {t.store_name || t.memo || '不明'}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>

@@ -76,8 +76,8 @@ export default function InputScreen() {
         amount: amountValue,
         type: 'expense',
         category_id: categoryId,
-        store_name: storeName || null,
-        memo: memo || null,
+        store_name: storeName || undefined,
+        memo: memo || undefined,
         source: 'manual',
       });
 
@@ -399,13 +399,14 @@ export default function InputScreen() {
           {/* 店名・メモ */}
           <Card style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 16 }}>
-              詳細
+              詳細オプション
             </Text>
             <TextInput
               value={storeName}
               onChangeText={setStoreName}
-              placeholder="店名"
+              placeholder="店名（購入先など）"
               editable={!loading}
+              placeholderTextColor={colors.inkLight}
               style={{
                 fontSize: 16,
                 color: colors.ink,
@@ -418,16 +419,38 @@ export default function InputScreen() {
             <TextInput
               value={memo}
               onChangeText={setMemo}
-              placeholder="メモ"
+              placeholder="品名・用途（名前・メモ）"
               editable={!loading}
+              placeholderTextColor={colors.inkLight}
               style={{
                 fontSize: 16,
                 color: colors.ink,
                 paddingVertical: 12,
                 borderBottomWidth: 1,
                 borderBottomColor: colors.borderLight,
+                marginBottom: 12,
               }}
             />
+
+            {/* 定番の用途サジェストタグ */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {['ランチ', 'カフェ', '日用品', '交通費', '夕食', '飲み会'].map((suggest) => (
+                <TouchableOpacity
+                  key={suggest}
+                  onPress={() => setMemo(suggest)}
+                  style={{
+                    backgroundColor: colors.bgWarm,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: colors.inkSoft }}>{suggest}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* 店名を記憶するチェックボックス */}
             {storeName && (
