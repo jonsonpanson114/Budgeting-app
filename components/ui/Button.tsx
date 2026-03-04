@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, TextStyle, ViewStyle, ActivityIndicator } from 'react-native';
-import { colors, spacing } from '../../lib/constants/colors';
+import { colors } from '../../lib/constants/colors';
+import { spacing } from '../../lib/constants/spacing';
 
 interface ButtonProps {
   title: string;
@@ -41,7 +42,7 @@ export function Button({
       style={[
         {
           backgroundColor: backgroundColor as any,
-          borderRadius: spacing.button,
+          borderRadius: 12,
           paddingVertical: 14,
           paddingHorizontal: 24,
           alignItems: 'center',
@@ -57,10 +58,10 @@ export function Button({
         <Text
           style={[
             {
-            color: textColor,
-            fontSize: 16,
-            fontWeight: '600',
-          },
+              color: textColor,
+              fontSize: 16,
+              fontWeight: '600',
+            },
             textStyle,
           ]}
         >
