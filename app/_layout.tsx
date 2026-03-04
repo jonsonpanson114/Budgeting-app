@@ -24,6 +24,9 @@ export default function RootLayout() {
       setUser(user.id);
       // 既にログイン済みならホームへ
       router.replace('/(tabs)');
+    } else {
+      // 未ログインならログイン画面へ
+      router.replace('/(auth)/login');
     }
   };
 
