@@ -1,7 +1,7 @@
 import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '../lib/constants/colors';
 import { useAuthStore } from '../lib/store/authStore';
@@ -13,22 +13,32 @@ export default function RootLayout() {
   const router = useRouter();
   const userId = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
-    const user = await getCurrentUser();
-    if (user) {
-      setUser(user.id);
-      // 既にログイン済みならホームへ
-      router.replace('/(tabs)');
-    } else {
-      // 未ログインならログイン画面へ
+    try {
+      const user = await getCurrentUser();
+      if (user) {
+        setUser(user.id);
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
       router.replace('/(auth)/login');
+    } finally {
+      setIsReady(true);
     }
   };
+
+  if (!isReady) {
+    return null; // またはローディングスピナー
+  }
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
