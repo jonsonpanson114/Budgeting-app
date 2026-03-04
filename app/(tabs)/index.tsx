@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { colors } from '../../lib/constants/colors';
+import { typography, fontWeights, fontSizes } from '../../lib/constants/typography';
+import { spacing } from '../../lib/constants/spacing';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../lib/store/authStore';
@@ -121,33 +123,63 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* 今月のサマリー */}
-        <Text style={{ fontSize: 24, fontWeight: '600', color: colors.ink, marginBottom: 24 }}>
-          今月の予算
-        </Text>
+        {/* 今月のサマリーヘッダー (洗練されたスタイル) */}
+        <View style={{ marginBottom: spacing.sectionGap, alignItems: 'center', marginTop: 16 }}>
+          <Text style={{
+            fontSize: fontSizes.xs,
+            fontWeight: fontWeights.semibold,
+            letterSpacing: 2,
+            color: colors.inkMuted,
+            textTransform: 'uppercase',
+            marginBottom: 4
+          }}>
+            Overview
+          </Text>
+          <Text style={{
+            fontSize: fontSizes.xl,
+            fontFamily: typography.serif,
+            color: colors.ink
+          }}>
+            今月の予算
+          </Text>
+        </View>
 
-        {/* 残り予算カード */}
-        <Card style={{ marginBottom: 24 }}>
-          <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 8 }}>
-            残り予算
-          </Text>
-          <Text style={{ fontSize: 48, fontWeight: '300', color: colors.ink }}>
-            ¥{remainingBudget.toLocaleString()}
-          </Text>
-          <View style={{ marginTop: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 14, color: colors.inkMuted }}>
-                目標
-              </Text>
-              <Text style={{ fontSize: 14, color: colors.inkSoft }}>
-                ¥{monthlyBudget.toLocaleString()}
-              </Text>
+        {/* 残り予算メインカード */}
+        <Card style={{ marginBottom: spacing.sectionGap, paddingTop: 32, paddingBottom: 32 }}>
+          <View style={{ alignItems: 'center', marginBottom: 24 }}>
+            <Text style={{ fontSize: fontSizes.sm, color: colors.inkMuted, marginBottom: 8, letterSpacing: 1 }}>
+              残り予算
+            </Text>
+            <Text style={{
+              fontSize: fontSizes['5xl'],
+              fontWeight: fontWeights.light,
+              fontFamily: typography.serif,
+              color: colors.ink,
+              letterSpacing: -1
+            }}>
+              ¥{remainingBudget.toLocaleString()}
+            </Text>
+          </View>
+          <View style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 40,
+            borderTopWidth: 1,
+            borderTopColor: colors.borderLight,
+            paddingTop: 24,
+            marginTop: 8
+          }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 4 }}>目標</Text>
+              <Text style={{ fontSize: fontSizes.md, color: colors.inkSoft }}>¥{monthlyBudget.toLocaleString()}</Text>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 14, color: colors.inkMuted }}>
-                支出
-              </Text>
-              <Text style={{ fontSize: 14, color: monthlyExpense > monthlyBudget ? colors.rose : colors.inkSoft }}>
+            <View style={{ width: 1, backgroundColor: colors.borderLight, height: '100%' }} />
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 4 }}>支出</Text>
+              <Text style={{
+                fontSize: fontSizes.md,
+                color: monthlyExpense > monthlyBudget ? colors.rose : colors.inkSoft
+              }}>
                 ¥{monthlyExpense.toLocaleString()}
               </Text>
             </View>
@@ -155,38 +187,38 @@ export default function HomeScreen() {
 
           {/* プログレスバー（カテゴリ別） */}
           {categorySummary.length > 0 && (
-            <View style={{ marginTop: 16 }}>
-              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 8 }}>
-                カテゴリ別予算の進捗
+            <View style={{ marginTop: 24 }}>
+              <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 12, letterSpacing: 1 }}>
+                CATEGORIES
               </Text>
               {categorySummary.slice(0, 3).map((item) => {
                 const progressPercent = Math.min((item.percentage || 0), 100);
                 const isOver = item.isOver || false;
                 return (
-                  <View key={item.category_name} style={{ marginBottom: 12 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <View key={item.category_name} style={{ marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <View
                           style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
                             backgroundColor: item.category_color,
                           }}
                         />
-                        <Text style={{ fontSize: 14, color: colors.inkSoft }}>{item.category_name}</Text>
+                        <Text style={{ fontSize: fontSizes.sm, color: colors.inkSoft }}>{item.category_name}</Text>
                       </View>
-                      <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+                      <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted }}>
                         {item.spent.toLocaleString()} / {item.budget.toLocaleString()}
                       </Text>
                     </View>
-                    <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2 }}>
+                    <View style={{ height: 2, backgroundColor: colors.borderLight, borderRadius: 1 }}>
                       <View
                         style={{
                           height: '100%',
                           width: `${progressPercent}%`,
                           backgroundColor: isOver ? colors.rose : colors.sage,
-                          borderRadius: 2,
+                          borderRadius: 1,
                         }}
                       />
                     </View>
@@ -195,31 +227,23 @@ export default function HomeScreen() {
               })}
               {/* 詳細表示 */}
               {totalProgressPercent > 0 && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                  <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-                    合計進捗
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16 }}>
+                  <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, letterSpacing: 1 }}>
+                    TOTAL PROGRESS
                   </Text>
-                  <TouchableOpacity
-                    onPress={handleBudgetSettings}
-                    style={{
-                      backgroundColor: colors.bgWarm,
-                      borderRadius: 6,
-                      paddingHorizontal: 12,
-                      paddingVertical: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 11, color: colors.accent }}>設定</Text>
+                  <TouchableOpacity onPress={handleBudgetSettings}>
+                    <Text style={{ fontSize: fontSizes.xs, color: colors.accent }}>設定を編集</Text>
                   </TouchableOpacity>
                 </View>
               )}
               {totalProgressPercent > 0 && (
-                <View style={{ height: 4, backgroundColor: colors.bgWarm, borderRadius: 2, marginTop: 8 }}>
+                <View style={{ height: 2, backgroundColor: colors.borderLight, borderRadius: 1, marginTop: 8 }}>
                   <View
                     style={{
                       height: '100%',
                       width: `${totalProgressPercent}%`,
                       backgroundColor: totalProgressPercent > 90 ? colors.rose : colors.sage,
-                      borderRadius: 2,
+                      borderRadius: 1,
                     }}
                   />
                 </View>
@@ -227,66 +251,83 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* AIコメントカード */}
-          {aiComment && (
-            <Card variant="alt" style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 12 }}>
-                AIからのアドバイス
-              </Text>
-              <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}>
-                <Text style={{ fontSize: 16, lineHeight: 24, color: colors.ink }}>
-                  {aiComment.summary}
-                </Text>
-              </View>
-            </Card>
-          )}
         </Card>
+
+        {/* AIコメントはより上品に、単独で浮かせる */}
+        {aiComment && (
+          <View style={{
+            marginBottom: spacing.sectionGap,
+            paddingHorizontal: 16,
+            paddingVertical: 24,
+            backgroundColor: colors.cardAlt,
+            borderRadius: spacing.cardRadius,
+            borderLeftWidth: 2,
+            borderLeftColor: colors.accent
+          }}>
+            <Text style={{
+              fontSize: fontSizes.xs,
+              color: colors.inkMuted,
+              letterSpacing: 2,
+              marginBottom: 12,
+              textTransform: 'uppercase'
+            }}>
+              Insight
+            </Text>
+            <Text style={{
+              fontSize: fontSizes.md,
+              lineHeight: 28,
+              color: colors.ink,
+              fontFamily: typography.serif,
+              fontStyle: 'italic'
+            }}>
+              "{aiComment.summary}"
+            </Text>
+          </View>
+        )}
 
         {/* カテゴリ別ドーナツチャート */}
         {pieChartData.length > 0 && (
-          <Card style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 16 }}>
-              支出の内訳
+          <Card style={{ marginBottom: spacing.sectionGap }}>
+            <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>
+              Breakdown
             </Text>
-            <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: fontSizes.md, color: colors.ink }}>支出の内訳</Text>
+            <View style={{ alignItems: 'center', marginTop: 16 }}>
               <VictoryPie
                 data={pieChartData}
                 width={screenWidth - 88}
                 height={screenWidth - 88}
-                innerRadius={screenWidth / 4}
+                innerRadius={screenWidth / 3.5}
                 colorScale={pieChartData.map(d => d.fill)}
                 style={{
-                  labels: { fontSize: 10, fill: colors.inkMuted },
+                  labels: { fontSize: fontSizes.xs, fill: colors.inkMuted, fontFamily: typography.sans },
                 }}
-                labelRadius={({ innerRadius }) => innerRadius + 20}
+                labelRadius={({ innerRadius }) => innerRadius! + 15}
               />
             </View>
           </Card>
         )}
 
-        {/* 支出内訳（カテゴリ別） */}
+        {/* 支出内訳リスト（カテゴリ別） */}
         {categorySummary.length > 0 && (
-          <Card style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink }}>
-                支出内訳（カテゴリ別）
+          <Card style={{ marginBottom: spacing.sectionGap }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontSize: fontSizes.md, color: colors.ink }}>
+                カテゴリ別詳細
               </Text>
-              <TouchableOpacity
-                onPress={handleBudgetSettings}
-                style={{ backgroundColor: colors.bgWarm, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
-              >
-                <Text style={{ fontSize: 13, color: colors.accent }}>管理</Text>
+              <TouchableOpacity onPress={handleBudgetSettings}>
+                <Text style={{ fontSize: fontSizes.xs, color: colors.accent }}>管理</Text>
               </TouchableOpacity>
             </View>
-            {categorySummary.map((item) => (
+            {categorySummary.map((item, index) => (
               <View
                 key={item.category_name}
                 style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
+                  paddingVertical: 16,
+                  borderBottomWidth: index === categorySummary.length - 1 ? 0 : 1,
                   borderBottomColor: colors.borderLight,
                 }}
               >
@@ -299,14 +340,14 @@ export default function HomeScreen() {
                       backgroundColor: item.category_color,
                     }}
                   />
-                  <Text style={{ fontSize: 15, color: colors.inkSoft }}>{item.category_name}</Text>
+                  <Text style={{ fontSize: fontSizes.sm, color: colors.inkSoft }}>{item.category_name}</Text>
                 </View>
-                <Text style={{ fontSize: 15, color: colors.ink, fontWeight: '300' }}>
-                  ¥{item.spent.toLocaleString()}
-                </Text>
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 12, color: item.isOver ? colors.rose : (item.spent >= item.budget ? colors.rose : colors.sage) }}>
-                    {item.spent >= item.budget ? '予算オーバー' : `${Math.round((item.spent / item.budget) * 100)}%`}
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: fontSizes.md, color: colors.ink, fontWeight: fontWeights.light }}>
+                    ¥{item.spent.toLocaleString()}
+                  </Text>
+                  <Text style={{ fontSize: fontSizes.xs, color: item.isOver ? colors.rose : colors.inkMuted, marginTop: 4 }}>
+                    {item.spent >= item.budget ? '予算オーバー' : `${Math.round((item.spent / item.budget) * 100)}% 利用`}
                   </Text>
                 </View>
               </View>
@@ -315,42 +356,45 @@ export default function HomeScreen() {
         )}
 
         {/* 直近の取引 */}
-        <Card>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.ink, marginBottom: 16 }}>
+        <Card style={{ marginBottom: 40 }}>
+          <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>
+            Recent
+          </Text>
+          <Text style={{ fontSize: fontSizes.md, color: colors.ink, marginBottom: 16 }}>
             直近の取引
           </Text>
           {transactions.length === 0 ? (
-            <Text style={{ fontSize: 14, color: colors.inkMuted, textAlign: 'center', paddingVertical: 20 }}>
+            <Text style={{ fontSize: fontSizes.sm, color: colors.inkLight, textAlign: 'center', paddingVertical: 32 }}>
               取引はありません
             </Text>
           ) : (
-            transactions.map((t) => (
+            transactions.map((t, index) => (
               <View
                 key={t.id}
                 style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
+                  paddingVertical: 16,
+                  borderBottomWidth: index === transactions.length - 1 ? 0 : 1,
                   borderBottomColor: colors.borderLight,
                 }}
               >
-                <View>
-                  <Text style={{ fontSize: 14, color: colors.inkMuted }}>
+                <View style={{ flex: 1, paddingRight: 16 }}>
+                  <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, marginBottom: 4 }}>
                     {formatDate(t.date)}
                   </Text>
-                  <Text style={{ fontSize: 15, color: colors.inkSoft }}>
+                  <Text style={{ fontSize: fontSizes.sm, color: colors.inkSoft }} numberOfLines={1}>
                     {t.store_name || '不明'}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 16, color: colors.ink, fontWeight: '300' }}>
+                  <Text style={{ fontSize: fontSizes.md, color: colors.ink, fontWeight: fontWeights.light }}>
                     ¥{t.amount.toLocaleString()}
                   </Text>
                   <Text
                     style={{
-                      fontSize: 12,
+                      fontSize: fontSizes.xs,
                       color: t.category_color || colors.inkLight,
                       marginTop: 4,
                     }}

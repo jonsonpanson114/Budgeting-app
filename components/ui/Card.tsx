@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ViewStyle } from 'react-native';
 import { colors } from '../../lib/constants/colors';
 import { spacing } from '../../lib/constants/spacing';
+import { shadows } from '../../lib/constants/shadows';
 
 interface CardProps {
   children: React.ReactNode;
@@ -25,7 +26,10 @@ export function Card({ children, variant = 'default', style, padding = spacing.c
           backgroundColor,
           borderRadius: spacing.cardRadius,
           padding,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
         },
+        shadows.card,
         style,
       ]}
     >
