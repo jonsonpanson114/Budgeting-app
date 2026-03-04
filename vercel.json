@@ -6,10 +6,5 @@
   "framework": null,
   "regions": [
     "hnd1"
-  ],
-  "env": {
-    "EXPO_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "EXPO_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "EXPO_PUBLIC_GEMINI_API_KEY": "@gemini-api-key"
-  }
+  ]
 }
