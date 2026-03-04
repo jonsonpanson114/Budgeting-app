@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
@@ -11,8 +11,8 @@ import {
   setCategoryBudget,
   getMonthlyBudget,
   getBudgetProgress,
-  type CategoryBudget,
 } from '../../features/budget/services/budgetService';
+import type { CategoryBudget } from '../../lib/types/common';
 
 export default function BudgetScreen() {
   const [loading, setLoading] = useState(false);
@@ -116,7 +116,7 @@ export default function BudgetScreen() {
             現在: ¥{monthlyBudget.toLocaleString()}
           </Text>
           <TouchableOpacity
-            onPress={() => {}}
+            onPress={() => { }}
             style={{ backgroundColor: colors.bgWarm, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 }}
           >
             <Text style={{ fontSize: 14, color: colors.accent }}>変更</Text>
@@ -163,52 +163,53 @@ export default function BudgetScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
-            {selectedCategory === category.id && (
-              <View style={{ marginTop: 8, gap: 8 }}>
-                <TextInput
-                  value={editAmount}
-                  onChangeText={setEditAmount}
-                  placeholder="金額"
-                  keyboardType="numeric"
-                  style={{
-                    flex: 1,
-                    backgroundColor: colors.bgWarm,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    fontSize: 15,
-                    color: colors.ink,
-                  }}
-                />
-                <TouchableOpacity
-                  onPress={() => handleSetCategoryBudget(category.id)}
-                  style={{
-                    backgroundColor: colors.accent,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    minWidth: 60,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
-                    保存
-                  </Text>
-                </TouchableOpacity>
-                {budget && (
-                  <TouchableOpacity
-                    onPress={() => handleDeleteBudget(budget.id)}
+
+              {selectedCategory === category.id && (
+                <View style={{ marginTop: 8, gap: 8 }}>
+                  <TextInput
+                    value={editAmount}
+                    onChangeText={setEditAmount}
+                    placeholder="金額"
+                    keyboardType="numeric"
                     style={{
+                      flex: 1,
                       backgroundColor: colors.bgWarm,
                       borderRadius: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 8,
+                      fontSize: 15,
+                      color: colors.ink,
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => handleSetCategoryBudget(category.id)}
+                    style={{
+                      backgroundColor: colors.accent,
+                      borderRadius: 8,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      minWidth: 60,
                     }}
                   >
-                    <Text style={{ fontSize: 14, color: colors.rose }}>削除</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.card }}>
+                      保存
+                    </Text>
                   </TouchableOpacity>
-                )}
-              </View>
+                  {budget && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteBudget(budget.id)}
+                      style={{
+                        backgroundColor: colors.bgWarm,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: colors.rose }}>削除</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
           );
         })}

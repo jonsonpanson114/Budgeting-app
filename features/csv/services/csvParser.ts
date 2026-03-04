@@ -14,6 +14,7 @@ export interface CSVParseResult {
     shop?: string;
     memo?: string;
   }[];
+  encoding?: string;
 }
 
 export async function parseCSV(csvText: string): Promise<CSVParseResult> {

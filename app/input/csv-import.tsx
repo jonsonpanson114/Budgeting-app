@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, View, Text, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { Screen } from '../../components/layout/Screen';
 import { Card } from '../../components/ui/Card';
@@ -42,7 +42,7 @@ export default function CSVImportScreen() {
           if (file) {
             const text = await file.text();
             const { parseCSV } = await import('../../features/csv/services/csvParser');
-            const result = parseCSV(text);
+            const result = await parseCSV(text);
             setCsvData(result);
             setLoading(false);
           }
@@ -58,12 +58,12 @@ export default function CSVImportScreen() {
           const file = result.assets[0];
           const text = await fetch(file.uri).then(r => r.text());
           const { parseCSV } = await import('../../features/csv/services/csvParser');
-          const parsed = parseCSV(text);
+          const parsed = await parseCSV(text);
           setCsvData(parsed);
           setLoading(false);
         }
       }
-    } catch (error: {
+    } catch (error: any) {
       console.error('Error picking CSV:', error);
       Alert.alert('エラー', 'CSVファイルの選択に失敗しました');
       setLoading(false);

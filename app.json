@@ -26,7 +26,12 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "name": "Budget App",
+      "shortName": "Budget",
+      "themeColor": "#ffffff",
+      "backgroundColor": "#ffffff",
+      "display": "standalone"
     },
     "plugins": [
       "expo-router"

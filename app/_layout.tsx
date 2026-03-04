@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { colors } from '../lib/constants/colors';
 import { useAuthStore } from '../lib/store/authStore';
 import { getCurrentUser } from '../lib/supabase/auth';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '../components/ui/ErrorFallback';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -26,12 +28,14 @@ export default function RootLayout() {
   };
 
   return (
-    <>
-      <StatusBar style="dark" backgroundColor={colors.bg} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-      </Stack>
-    </>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <>
+        <StatusBar style="dark" backgroundColor={colors.bg} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+        </Stack>
+      </>
+    </ErrorBoundary>
   );
 }
