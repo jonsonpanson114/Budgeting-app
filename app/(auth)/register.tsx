@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../lib/constants/colors';
 import { Screen } from '../../components/layout/Screen';
