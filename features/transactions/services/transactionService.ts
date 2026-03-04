@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase/client';
 import type { Transaction } from '../../../lib/types/common';
 import { defaultCategories } from '../../../lib/constants/categories';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export async function createTransaction(transaction: Omit<Transaction, 'id' | 'created_at' | 'category_confirmed' | 'category_name' | 'category_color'>) {
   // カテゴリ名と色を取得
@@ -26,58 +27,88 @@ export async function createTransaction(transaction: Omit<Transaction, 'id' | 'c
 }
 
 export async function getTransactions(userId: string): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select(`
-      id,
-      date,
-      amount,
-      type,
-      category_id,
-      category_name,
-      category_color,
-      store_name,
-      memo,
-      source,
-      created_at
-    `)
-    .eq('user_id', userId)
-    .order('date', { ascending: false, nullsFirst: false });
+  const cacheKey = `transactions_${userId}`;
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        date,
+        amount,
+        type,
+        category_id,
+        category_name,
+        category_color,
+        store_name,
+        memo,
+        source,
+        created_at
+      `)
+      .eq('user_id', userId)
+      .order('date', { ascending: false, nullsFirst: false });
 
-  if (error) {
-    console.error('Error fetching transactions:', error);
+    if (error) {
+      throw error;
+    }
+
+    const txs = (data as Transaction[]) || [];
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(txs));
+    return txs;
+  } catch (error) {
+    console.error('Error fetching transactions, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
     throw error;
   }
-
-  return (data as Transaction[]) || [];
 }
 
 export async function getRecentTransactions(userId: string, limit: number = 5): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select(`
-      id,
-      date,
-      amount,
-      type,
-      category_id,
-      category_name,
-      category_color,
-      store_name,
-      memo,
-      source,
-      created_at
-    `)
-    .eq('user_id', userId)
-    .order('date', { ascending: false, nullsFirst: false })
-    .limit(limit);
+  const cacheKey = `recent_transactions_${userId}_${limit}`;
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        date,
+        amount,
+        type,
+        category_id,
+        category_name,
+        category_color,
+        store_name,
+        memo,
+        source,
+        created_at
+      `)
+      .eq('user_id', userId)
+      .order('date', { ascending: false, nullsFirst: false })
+      .limit(limit);
 
-  if (error) {
-    console.error('Error fetching recent transactions:', error);
+    if (error) {
+      throw error;
+    }
+
+    const txs = (data as Transaction[]) || [];
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(txs));
+    return txs;
+  } catch (error) {
+    console.error('Error fetching recent transactions, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
     throw error;
   }
-
-  return (data as Transaction[]) || [];
 }
 
 export async function getTransactionsByDateRange(
@@ -85,20 +116,35 @@ export async function getTransactionsByDateRange(
   startDate: string,
   endDate: string
 ): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .order('date', { ascending: false });
+  const cacheKey = `transactions_range_${userId}_${startDate}_${endDate}`;
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching transactions by date range:', error);
+    if (error) {
+      throw error;
+    }
+
+    const txs = (data as Transaction[]) || [];
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(txs));
+    return txs;
+  } catch (error) {
+    console.error('Error fetching transactions by date range, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
     throw error;
   }
-
-  return (data as Transaction[]) || [];
 }
 
 export async function getMonthlySummary(userId: string, year: number, month: number) {

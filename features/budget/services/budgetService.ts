@@ -1,35 +1,51 @@
 import { supabase } from '../../../lib/supabase/client';
 import { defaultCategories } from '../../../lib/constants/categories';
 import type { CategoryBudget } from '../../../lib/types/common';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// カテゴリ別予算を取得
 export async function getCategoryBudgets(userId: string): Promise<CategoryBudget[]> {
-  const { data, error } = await supabase
-    .from('category_budgets')
-    .select(`
-      id,
-      category_id,
-      categories (
-        name,
-        color
-      ),
-      amount,
-      period_type,
-      start_date,
-      end_date,
-      alert_threshold,
-      is_active
-    `)
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('start_date', { ascending: false });
+  const cacheKey = `category_budgets_${userId}`;
+  try {
+    const { data, error } = await supabase
+      .from('category_budgets')
+      .select(`
+        id,
+        user_id,
+        category_id,
+        categories (
+          name,
+          color
+        ),
+        amount,
+        period_type,
+        start_date,
+        end_date,
+        alert_threshold,
+        is_active
+      `)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('start_date', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching category budgets:', error);
+    if (error) {
+      throw error;
+    }
+
+    const budgets = (data as CategoryBudget[]) || [];
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(budgets));
+    return budgets;
+  } catch (error) {
+    console.error('Error fetching category budgets, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
     throw error;
   }
-
-  return (data as CategoryBudget[]) || [];
 }
 
 // カテゴリ別予算を設定
@@ -78,21 +94,33 @@ export async function getCategoryExpense(
   startDate: string,
   endDate: string
 ): Promise<number> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('amount')
-    .eq('user_id', userId)
-    .eq('category_id', categoryId)
-    .gte('date', startDate)
-    .lte('date', endDate);
+  const cacheKey = `category_expense_${userId}_${categoryId}_${startDate}_${endDate}`;
+  try {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('amount')
+      .eq('user_id', userId)
+      .eq('category_id', categoryId)
+      .gte('date', startDate)
+      .lte('date', endDate);
 
-  if (error) {
-    console.error('Error fetching category expense:', error);
-    throw error;
+    if (error) throw error;
+
+    const total = data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(total));
+    return total;
+  } catch (error) {
+    console.error('Error fetching category expense, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
+    return 0;
   }
-
-  const total = data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-  return total || 0;
 }
 
 // 予算の残りを計算
@@ -183,11 +211,29 @@ function getPeriodEndDate(periodType: string): string {
 
 // 月次予算を取得
 export async function getMonthlyBudget(userId: string): Promise<number> {
-  const { data } = await supabase
-    .from('user_settings')
-    .select('monthly_budget')
-    .eq('user_id', userId)
-    .single();
+  const cacheKey = `monthly_budget_${userId}`;
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('monthly_budget')
+      .eq('user_id', userId)
+      .single();
 
-  return data?.monthly_budget || 0;
+    if (error) throw error;
+
+    const budget = data?.monthly_budget || 0;
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(budget));
+    return budget;
+  } catch (error) {
+    console.error('Error fetching monthly budget, trying cache:', error);
+    try {
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
+    }
+    return 0;
+  }
 }
