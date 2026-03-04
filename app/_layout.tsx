@@ -13,32 +13,27 @@ export default function RootLayout() {
   const router = useRouter();
   const userId = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const user = await getCurrentUser();
-      if (user) {
-        setUser(user.id);
-        router.replace('/(tabs)');
-      } else {
+    // コンポーネントがマウントされてからチェック
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUser(user.id);
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/(auth)/login');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
         router.replace('/(auth)/login');
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      router.replace('/(auth)/login');
-    } finally {
-      setIsReady(true);
-    }
-  };
+    };
 
-  if (!isReady) {
-    return null; // またはローディングスピナー
-  }
+    // ちょっと待機させてルーターの準備を待つ
+    setTimeout(checkAuth, 100);
+  }, []);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>

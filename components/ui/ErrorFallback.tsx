@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { FallbackProps } from 'react-error-boundary';
 import { colors } from '../../lib/constants/colors';
 
