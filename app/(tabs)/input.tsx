@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Modal, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
+import { Alert, Modal, Text, TextInput, TouchableOpacity, View, Image, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../lib/constants/colors';
@@ -12,6 +13,19 @@ import { classifyCategory, saveStoreMapping } from '../../features/transactions/
 import { getVoiceInputService, resetVoiceInputService, type VoiceInputResult } from '../../features/input/services/voiceInputService';
 import { processVoiceInput, type ParsedInput } from '../../features/input/services/inputParser';
 import { parseReceipt, type ParsedReceipt } from '../../features/receipt/services/receiptParser';
+
+const triggerConfetti = () => {
+  if (Platform.OS === 'web') {
+    import('canvas-confetti').then((confetti) => {
+      confetti.default({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: [colors.accent, colors.sage, colors.rose, '#FFD700']
+      });
+    });
+  }
+};
 
 export default function InputScreen() {
   const [inputMode, setInputMode] = useState<'manual' | 'receipt' | 'csv' | 'voice'>('manual');
@@ -46,7 +60,7 @@ export default function InputScreen() {
       return;
     }
 
-    const amountValue = parseInt(amount.replace(/,/g, ''), 10);
+    const amountValue = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(amountValue) || amountValue <= 0) {
       Alert.alert('エラー', '金額を正しく入力してください');
       return;
@@ -55,6 +69,11 @@ export default function InputScreen() {
     setLoading(true);
 
     try {
+      // ハプティクス・フィードバック
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
       // カテゴリを自動分類（店名がある場合）
       let categoryId = selectedCategory;
       let categorySource: 'manual' | 'builtin' | 'user_dict' | 'ai' = 'manual';
@@ -93,7 +112,12 @@ export default function InputScreen() {
       setMemo('');
       setRememberStore(false);
 
-      Alert.alert('記録完了', '支出を記録しました');
+      // 成功エフェクト
+      triggerConfetti();
+      
+      Alert.alert('完了', '支出を記録しました', [
+        { text: 'OK', onPress: () => router.replace('/') }
+      ]);
     } catch (error) {
       console.error('Error recording transaction:', error);
       Alert.alert('エラー', '記録に失敗しました');

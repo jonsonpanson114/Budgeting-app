@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions, Platform, Alert, Modal, TextInput, Image } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../lib/constants/colors';
 import { typography, fontWeights, fontSizes } from '../../lib/constants/typography';
 import { spacing } from '../../lib/constants/spacing';
@@ -11,6 +12,20 @@ import { useAIStore } from '../../lib/store/aiStore';
 import { getRecentTransactions, getMonthlySummary } from '../../features/transactions/services/transactionService';
 import { getCategoryBudgets, getBudgetProgress, getMonthlyBudget } from '../../features/budget/services/budgetService';
 import { getOrGenerateAIComment, getCurrentMonthPeriod } from '../../features/ai/services/aiService';
+import { parseReceipt, type ParsedReceipt } from '../../features/receipt/services/receiptParser';
+
+const triggerConfetti = () => {
+  if (Platform.OS === 'web') {
+    import('canvas-confetti').then((confetti) => {
+      confetti.default({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: [colors.accent, colors.sage, colors.rose, '#FFD700']
+      });
+    });
+  }
+};
 import { router } from 'expo-router';
 import { VictoryPie } from 'victory-native';
 import type { Transaction } from '../../lib/types/common';
@@ -54,12 +69,11 @@ export default function HomeScreen() {
       setMonthlyIncome(summary.totalIncome);
 
       // カテゴリ別予算・進捗を取得
-      const { categoryBudgets, categoryProgress } = await getBudgetProgress(userId, year, month);
-      setCategoryBudgets(categoryBudgets);
-      setCategorySummary(categoryProgress);
+      const budgetData = await getBudgetProgress(userId, year, month);
+      setCategorySummary(budgetData.categoryProgress);
 
       // ドーナツチャート用データを作成
-      const pieData: PieChartData[] = categoryProgress.map(item => ({
+      const pieData: PieChartData[] = budgetData.categoryProgress.map((item: any) => ({
         x: item.category_name,
         y: item.spent,
         fill: item.category_color,
@@ -102,6 +116,25 @@ export default function HomeScreen() {
     router.push('/settings/budget');
   };
 
+  // NMD (No-Spend Day) の計算
+  const getNMDCount = () => {
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const spentDays = new Set(transactions.map(t => t.date.split('T')[0]));
+    const currentDay = today.getDate();
+    
+    let nmdCount = 0;
+    for (let i = 1; i <= currentDay; i++) {
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      if (!spentDays.has(dateStr)) {
+        nmdCount++;
+      }
+    }
+    return nmdCount;
+  };
+
+  const nmdCount = getNMDCount();
+
   if (loading) {
     return (
       <Screen>
@@ -125,6 +158,21 @@ export default function HomeScreen() {
       >
         {/* 今月のサマリーヘッダー (洗練されたスタイル) */}
         <View style={{ marginBottom: spacing.sectionGap, alignItems: 'center', marginTop: 16 }}>
+          <View style={{ 
+            backgroundColor: colors.accentBg, 
+            paddingHorizontal: 12, 
+            paddingVertical: 4, 
+            borderRadius: 20, 
+            marginBottom: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            <Text style={{ fontSize: 16 }}>✨</Text>
+            <Text style={{ fontSize: fontSizes.xs, fontWeight: '600', color: colors.accent }}>
+              今月は {nmdCount} 日の無買日を達成中
+            </Text>
+          </View>
           <Text style={{
             fontSize: fontSizes.xs,
             fontWeight: fontWeights.semibold,
@@ -285,6 +333,33 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Jinnai AI からの一言 */}
+        {aiComment && (
+          <Card variant="alt" style={{ marginBottom: spacing.sectionGap }}>
+             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ 
+                width: 32, 
+                height: 32, 
+                borderRadius: 16, 
+                backgroundColor: colors.accent,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 10
+              }}>
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>J</Text>
+              </View>
+              <Text style={{ fontSize: fontSizes.xs, color: colors.inkMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                Jinnai's Voice
+              </Text>
+            </View>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 16, paddingVertical: 4 }}>
+              <Text style={{ fontSize: fontSizes.md, lineHeight: 24, color: colors.ink, fontStyle: 'italic' }}>
+                「{aiComment.summary}」
+              </Text>
+            </View>
+          </Card>
+        )}
+
         {/* カテゴリ別ドーナツチャート */}
         {pieChartData.length > 0 && (
           <Card style={{ marginBottom: spacing.sectionGap }}>
@@ -302,7 +377,7 @@ export default function HomeScreen() {
                 style={{
                   labels: { fontSize: fontSizes.xs, fill: colors.inkMuted, fontFamily: typography.sans },
                 }}
-                labelRadius={({ innerRadius }) => innerRadius! + 15}
+                labelRadius={({ innerRadius }: any) => (innerRadius || 0) + 15}
               />
             </View>
           </Card>
