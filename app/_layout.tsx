@@ -48,6 +48,7 @@ export default function RootLayout() {
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
           <link rel="icon" href="/favicon.png" />
+          <link rel="manifest" href="/manifest.json" />
         </Head>
         <StatusBar style="dark" backgroundColor={colors.bg} />
         <Stack screenOptions={{ headerShown: false }}>
