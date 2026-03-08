@@ -13,7 +13,7 @@ import {
 } from '../../features/ai/services/aiService';
 import { getMonthlySummary } from '../../features/transactions/services/transactionService';
 import { defaultCategories } from '../../lib/constants/categories';
-import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme, VictoryArea } from 'victory-native';
+import { defaultCategories } from '../../lib/constants/categories';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -210,60 +210,13 @@ export default function AnalysisScreen() {
               </View>
             </Card>
 
-            {/* 支出推移チャート */}
+            {/* 支出推移チャート（修正中） */}
             <Card style={{ marginBottom: 24 }}>
               <Text style={{ fontSize: 14, color: colors.inkMuted, marginBottom: 16 }}>
                 6ヶ月の支出推移
               </Text>
-              <View style={{ alignItems: 'center' }}>
-                <VictoryChart
-                  width={screenWidth - 88}
-                  height={200}
-                  theme={VictoryTheme.material}
-                  padding={{ top: 20, bottom: 30, left: 50, right: 20 }}
-                >
-                  {/* 塗りつぶしエリア（0.08透過） */}
-                  <VictoryArea
-                    data={monthlyTrend}
-                    x="month"
-                    y="amount"
-                    style={{
-                      data: { fill: colors.accent, fillOpacity: 0.08 },
-                    }}
-                    interpolation="catmullRom"
-                  />
-                  {/* 折れ線 */}
-                  <VictoryLine
-                    data={monthlyTrend}
-                    x="month"
-                    y="amount"
-                    style={{
-                      data: {
-                        stroke: colors.accent,
-                        strokeWidth: 2,
-                      },
-                    }}
-                    interpolation="catmullRom"
-                  />
-                  {/* Y軸 */}
-                  <VictoryAxis
-                    dependentAxis
-                    style={{
-                      axis: { stroke: colors.borderLight, strokeWidth: 1 },
-                      tickLabels: { fontSize: 10, fill: colors.inkMuted },
-                      grid: { stroke: colors.borderLight, strokeWidth: 1 },
-                    }}
-                    tickFormat={(value) => `¥${(value / 1000).toFixed(0)}k`}
-                  />
-                  {/* X軸 */}
-                  <VictoryAxis
-                    style={{
-                      axis: { stroke: colors.borderLight, strokeWidth: 1 },
-                      tickLabels: { fontSize: 10, fill: colors.inkMuted },
-                      grid: { display: 'none' },
-                    }}
-                  />
-                </VictoryChart>
+              <View style={{ height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgWarm, borderRadius: 12 }}>
+                <Text style={{ color: colors.inkMuted }}>グラフ準備中...</Text>
               </View>
             </Card>
 

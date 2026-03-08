@@ -1,6 +1,8 @@
 import { supabase } from '../../../lib/supabase/client';
 import type { AIComment, AITone } from '../../../lib/types/common';
 
+export type { AIComment, AITone };
+
 /**
  * 支出分析をリクエストする
  */
