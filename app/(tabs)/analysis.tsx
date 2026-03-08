@@ -12,9 +12,6 @@ import {
   type AIComment,
 } from '../../features/ai/services/aiService';
 import { getMonthlySummary } from '../../features/transactions/services/transactionService';
-import { defaultCategories } from '../../lib/constants/categories';
-import { defaultCategories } from '../../lib/constants/categories';
-
 const screenWidth = Dimensions.get('window').width;
 
 interface MonthlyTrendData {
