@@ -16,10 +16,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { method } = await req.json();
+    const body = await req.json();
+    const { method } = body;
 
     if (method === 'analyze-spending') {
-      const { userId, period, tone } = await req.json();
+      const { userId, period, tone } = body;
 
       if (!userId) {
         return new Response(

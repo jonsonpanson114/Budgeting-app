@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Modal, Text, TextInput, TouchableOpacity, View, Image, Platform } from 'react-native';
+import { Alert, Modal, Text, TextInput, TouchableOpacity, View, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -274,7 +274,11 @@ export default function InputScreen() {
   };
 
   return (
-    <Screen>
+    <Screen scrollable={true} scrollViewProps={{ keyboardShouldPersistTaps: 'handled' }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <Text style={{ fontSize: 24, fontWeight: '600', color: colors.ink, marginBottom: 24 }}>
         支出を記録
       </Text>
@@ -346,6 +350,7 @@ export default function InputScreen() {
               onChangeText={setAmount}
               placeholder="0"
               keyboardType="numeric"
+              returnKeyType="done"
               editable={!loading}
               style={{
                 fontSize: 48,
@@ -790,6 +795,7 @@ export default function InputScreen() {
           </Card>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
