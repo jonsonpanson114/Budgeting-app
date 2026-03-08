@@ -29,9 +29,36 @@
       "output": "static",
       "name": "Budget App",
       "shortName": "Budget",
-      "themeColor": "#ffffff",
-      "backgroundColor": "#ffffff",
-      "display": "standalone"
+      "themeColor": "#1A1A1A",
+      "backgroundColor": "#1A1A1A",
+      "display": "standalone",
+      "config": {
+        "pwa": {
+          "manifest": {
+            "name": "Budget App",
+            "short_name": "Budget",
+            "description": "Premium Budgeting Application",
+            "icons": [
+              {
+                "src": "favicon.png",
+                "sizes": "48x48",
+                "type": "image/png"
+              },
+              {
+                "src": "icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+              },
+              {
+                "src": "icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+              }
+            ],
+            "start_url": "."
+          }
+        }
+      }
     },
     "plugins": [
       "expo-router"

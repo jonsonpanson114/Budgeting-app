@@ -1,5 +1,6 @@
 import '../global.css';
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -40,6 +41,14 @@ export default function RootLayout() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <>
+        <Head>
+          <title>Budget App</title>
+          <meta name="description" content="Premium Budgeting Application" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+          <link rel="icon" href="/favicon.png" />
+        </Head>
         <StatusBar style="dark" backgroundColor={colors.bg} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
