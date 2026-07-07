@@ -6,6 +6,7 @@ export interface ParsedTransaction {
   date: string;
   content: string;
   amount: number;
+  type: 'income' | 'expense';
   bank: string;
   largeItem: string;
   middleItem: string;
@@ -57,9 +58,6 @@ export function parseMoneyforwardCSV(csvText: string): ParsedTransaction[] {
       } else if (char === ',' && !inQuotes) {
         values.push(current.trim());
         current = '';
-      } else if (char === ',') {
-        values.push(current.trim());
-        current = '';
       } else {
         current += char;
       }
@@ -77,24 +75,25 @@ export function parseMoneyforwardCSV(csvText: string): ParsedTransaction[] {
       return index !== undefined ? values[index] || '' : '';
     };
 
-    const dateStr = getValue('日付').replace(/\//g, '-'); // 和暦を対応
-    const amountStr = getValue('金額(税込)').replace(/[,-]/g, '').replace(/円/g, '');
+    const dateStr = getValue('日付').replace(/\//g, '-');
+    const amountStr = getValue('金額(税込)').replace(/,/g, '').replace(/円/g, '');
     const amount = parseFloat(amountStr);
 
     // 日付を解析（複数形式に対応）
     let parsedDate = dateStr;
     const dateMatch = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
     if (dateMatch) {
-      parsedDate = `${dateMatch[1]}-${dateMatch[3].padStart(2, '0')}-${dateMatch[5].padStart(2, '0')}`;
+      parsedDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
     }
 
-    // 支出は正の数値（MFでは支出が正、収入がマイナス）
-    const isExpense = amount > 0;
+    // マネーフォワードMEでは支出がマイナス、収入がプラスで記録される
+    const isExpense = amount < 0;
 
     transactions.push({
       date: parsedDate,
       content: getValue('内容'),
       amount: Math.abs(amount),
+      type: isExpense ? 'expense' : 'income',
       bank: getValue('保有金融機関'),
       largeItem: getValue('大項目') || '',
       middleItem: getValue('中項目') || '',
@@ -105,13 +104,6 @@ export function parseMoneyforwardCSV(csvText: string): ParsedTransaction[] {
   }
 
   return transactions;
-}
-
-// 文字コードを検出（Shift_JIS対応）
-export function detectEncoding(csvText: string): 'utf-8' | 'shift_jis' {
-  // Shift_JISの可能性をチェック
-  const hasShiftJISChars = /[\x81-\x9F\xFA-\xFD]/.test(csvText);
-  return hasShiftJISChars ? 'shift_jis' : 'utf-8';
 }
 
 // CSVがマネーフォワードME形式かを判定

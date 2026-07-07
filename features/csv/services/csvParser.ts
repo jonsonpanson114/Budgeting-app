@@ -1,5 +1,5 @@
-import { parseMoneyforwardCSV, isMoneyforwardFormat, detectEncoding } from './parsers/moneyforwardParser';
-import { parseZaimCSV, isZaimFormat } from './parsers/zaimParser';
+import { parseMoneyforwardCSV, isMoneyforwardFormat } from '../parsers/moneyforwardParser.ts';
+import { parseZaimCSV, isZaimFormat } from '../parsers/zaimParser.ts';
 
 export type CSVFormat = 'moneyforward' | 'zaim' | 'unknown';
 
@@ -10,6 +10,7 @@ export interface CSVParseResult {
     content?: string;
     item?: string;
     amount: number;
+    type?: 'income' | 'expense';
     bank?: string;
     shop?: string;
     memo?: string;
@@ -22,8 +23,11 @@ export async function parseCSV(csvText: string): Promise<CSVParseResult> {
     throw new Error('CSVが空です');
   }
 
-  // 文字コードを検出
-  const encoding = detectEncoding(csvText);
+  // 文字コード(encoding)はこの関数では判定しない。
+  // 判定は features/csv/services/encoding.ts の decodeCsvBytes が
+  // 生バイト列に対して行い、呼び出し元がその結果で
+  // CSVParseResult.encoding を上書きする。
+  const encoding: string | undefined = undefined;
 
   // フォーマットを自動判別
   let format: CSVFormat = 'unknown';
@@ -37,7 +41,7 @@ export async function parseCSV(csvText: string): Promise<CSVParseResult> {
     throw new Error('認識できないCSV形式です。マネーフォワードMEまたはZaimのCSVを入力してください。');
   }
 
-  let transactions;
+  let transactions: CSVParseResult['transactions'] = [];
 
   if (format === 'moneyforward') {
     const mfData = parseMoneyforwardCSV(csvText);
@@ -45,6 +49,7 @@ export async function parseCSV(csvText: string): Promise<CSVParseResult> {
       date: t.date,
       content: t.content,
       amount: t.amount,
+      type: t.type,
       shop: t.bank, // 保有金融機関を店名として扱う
       memo: t.memo,
     }));
@@ -54,6 +59,7 @@ export async function parseCSV(csvText: string): Promise<CSVParseResult> {
       date: t.date,
       item: t.item,
       amount: t.income > 0 ? t.income : t.expense,
+      type: t.income > 0 ? ('income' as const) : ('expense' as const),
       shop: t.shop,
       memo: t.memo,
     }));
@@ -72,7 +78,7 @@ export async function readCSVFile(file: File): Promise<CSVParseResult> {
     const reader = new FileReader();
 
     reader.onload = (e) => {
-      const text = e.target.result as string;
+      const text = e.target?.result as string;
       if (!text) {
         reject(new Error('CSVファイルの読み込みに失敗しました'));
         return;

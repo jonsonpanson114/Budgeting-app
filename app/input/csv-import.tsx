@@ -37,13 +37,32 @@ export default function CSVImportScreen() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv,.CSV';
+
+        // ファイル選択ダイアログがキャンセルされた場合はonchangeが発火しないため、
+        // window再フォーカスを簡易的に検知してloadingを解除する
+        let fileWasChosen = false;
+        const clearLoadingOnCancel = () => {
+          window.removeEventListener('focus', clearLoadingOnCancel);
+          setTimeout(() => {
+            if (!fileWasChosen) {
+              setLoading(false);
+            }
+          }, 300);
+        };
+        window.addEventListener('focus', clearLoadingOnCancel);
+
         input.onchange = async (e: any) => {
           const file = e.target.files[0];
           if (file) {
-            const text = await file.text();
+            fileWasChosen = true;
+            window.removeEventListener('focus', clearLoadingOnCancel);
+            const arrayBuffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            const { decodeCsvBytes } = await import('../../features/csv/services/encoding');
             const { parseCSV } = await import('../../features/csv/services/csvParser');
+            const { text, encoding } = decodeCsvBytes(bytes);
             const result = await parseCSV(text);
-            setCsvData(result);
+            setCsvData({ ...result, encoding });
             setLoading(false);
           }
         };
@@ -56,10 +75,15 @@ export default function CSVImportScreen() {
 
         if (!result.canceled && result.assets[0]) {
           const file = result.assets[0];
-          const text = await fetch(file.uri).then(r => r.text());
+          const { File } = await import('expo-file-system');
+          const bytes = await new File(file.uri).bytes();
+          const { decodeCsvBytes } = await import('../../features/csv/services/encoding');
           const { parseCSV } = await import('../../features/csv/services/csvParser');
+          const { text, encoding } = decodeCsvBytes(bytes);
           const parsed = await parseCSV(text);
-          setCsvData(parsed);
+          setCsvData({ ...parsed, encoding });
+          setLoading(false);
+        } else {
           setLoading(false);
         }
       }

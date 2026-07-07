@@ -7,7 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export -p web"
+    "build": "expo export -p web",
+    "test": "node --test features/csv/parsers/**/*.test.ts features/csv/services/**/*.test.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.6",
@@ -17,10 +18,12 @@
     "@supabase/supabase-js": "^2.98.0",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
+    "encoding-japanese": "^2.2.0",
     "expo": "~55.0.4",
     "expo-camera": "^55.0.9",
     "expo-constants": "~55.0.7",
     "expo-document-picker": "~55.0.8",
+    "expo-file-system": "~55.0.23",
     "expo-haptics": "~55.0.8",
     "expo-image-picker": "^55.0.10",
     "expo-linking": "~55.0.7",

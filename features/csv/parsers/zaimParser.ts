@@ -60,9 +60,6 @@ export function parseZaimCSV(csvText: string): ParsedTransaction[] {
       } else if (char === ',' && !inQuotes) {
         values.push(current.trim());
         current = '';
-      } else if (char === ',') {
-        values.push(current.trim());
-        current = '';
       } else {
         current += char;
       }
@@ -82,7 +79,7 @@ export function parseZaimCSV(csvText: string): ParsedTransaction[] {
 
     const dateStr = getValue('日付');
     const expenseStr = getValue('支出');
-    const incomeStr = getValue('入金');
+    const incomeStr = getValue('収入');
     const amountStr = expenseStr || incomeStr || '';
     const amount = parseFloat(amountStr.replace(/[,-]/g, '').replace(/円/g, '')) || 0;
 
@@ -99,7 +96,7 @@ export function parseZaimCSV(csvText: string): ParsedTransaction[] {
     let parsedDate = dateStr;
     const dateMatch = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
     if (dateMatch) {
-      parsedDate = `${dateMatch[1]}-${dateMatch[3].padStart(2, '0')}-${dateMatch[5].padStart(2, '0')}`;
+      parsedDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
     }
 
     transactions.push({
@@ -116,9 +113,9 @@ export function parseZaimCSV(csvText: string): ParsedTransaction[] {
       income: isIncome ? amount : 0,
       expense: isExpense ? amount : 0,
       transfer: isTransfer ? amount : 0,
-      balanceAdjustment: parseFloat(getValue('残高調整').replace(/[,-]/g, '') || 0,
+      balanceAdjustment: parseFloat(getValue('残高調整').replace(/,/g, '') || '0'),
       place: getValue('PLACE'),
-      amountBeforeCurrencyConversion: parseFloat(getValue('通貨変換前の金額').replace(/[,-]/g, '') || 0,
+      amountBeforeCurrencyConversion: parseFloat(getValue('通貨変換前の金額').replace(/,/g, '') || '0'),
     });
   }
 
