@@ -595,3 +595,24 @@ function normalizeStoreName(name: string): string {
 - スタイル: NativeWind (Tailwind) を基本とし、デザインシステムの色・spacing定数を使う
 - コメント: 日本語OK
 - エラーハンドリング: try-catch + ユーザー向けトースト通知
+
+---
+
+## AI 運用ルール(全モデル共通)
+
+このプロジェクトの作業は `../think/` の運用キット(README.md が入口)に従うこと:
+
+- **実装タスク** → `../think/06-escalation.md` の停止条件を守る。完了報告には実行した
+  コマンドと結果を含める(宣言だけの「動きます」は不可)
+- **レビュー** → `../think/03-review-checklist.md` の「依頼の仕方 v2」の手順で
+- **設計・仕様** → `../think/07-question-bank.md` の該当セクションに先に答えてから書く
+- **大きめの作業が終わったら** → 「今回の教訓を think/03 か 07 に追記しますか」と提案する
+
+### このプロジェクト固有の注意
+
+- テスト: `npm test`(node --test)。CSV パーサーとエンコーディング判定に単体テストあり
+- プロジェクト全体の `tsc --noEmit` は既存の tsconfig 矛盾(TS5098)で通らない。
+  型チェックは変更ファイル個別に CLI オーバーライドで行う(前例は git log 参照)
+- 文字コード: CSV は生バイト列で読み、decodeCsvBytes(features/csv/services/encoding.ts)で
+  判定・デコードする。TextDecoder('shift_jis') は Hermes 非対応なので使わない
+- ネイティブ側の動作確認は実機が必要。できない場合は「コード完了・実機未検証」を分けて報告する
